@@ -113,6 +113,7 @@ class DensePoseResultsMplContourVisualizer(DensePoseResultsVisualizer):
             bbox_xywh[1],
             bbox_xywh[1] + bbox_xywh[3],
         )
+        # print('self.plot_args',self.plot_args) empty
         plt.contour(u, self.levels, extent=extent, **self.plot_args)
         plt.contour(v, self.levels, extent=extent, **self.plot_args)
 

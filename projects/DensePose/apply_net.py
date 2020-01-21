@@ -7,6 +7,7 @@ import pickle
 import sys
 from typing import Any, ClassVar, Dict, List
 import torch
+import numpy as np
 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
@@ -24,8 +25,10 @@ from densepose.vis.densepose import (
     DensePoseResultsFineSegmentationVisualizer,
     DensePoseResultsUVisualizer,
     DensePoseResultsVVisualizer,
+    DensePoseResult
 )
 from densepose.vis.extractor import CompoundExtractor, create_extractor
+from densepose.utils.densepose_methods import DensePoseMethods,visulizeDenseposePredictionsOnModel
 
 DOC = """Apply Net - a tool to print / visualize DensePose results
 """
@@ -34,6 +37,9 @@ LOGGER_NAME = "apply_net"
 logger = logging.getLogger(LOGGER_NAME)
 
 _ACTION_REGISTRY: Dict[str, "Action"] = {}
+
+# root_directory = '/home/bala/Documents/Link to GuidedResearch/Datasets/RenderedDataset/Women'
+root_directory = '/home/bala/Documents/Link to GuidedResearch/Datasets/RenderedDataset/autumn_man'
 
 
 class Action(object):
@@ -161,13 +167,13 @@ class DumpAction(InferenceAction):
 
     @classmethod
     def postexecute(cls: type, context: Dict[str, Any]):
-        out_fname = context["out_fname"]
+        out_fname = os.path.join(root_directory, 'densePosePrediction.pkl')
         out_dir = os.path.dirname(out_fname)
         if len(out_dir) > 0 and not os.path.exists(out_dir):
             os.makedirs(out_dir)
         with open(out_fname, "wb") as hFile:
             pickle.dump(context["results"], hFile)
-            logger.info(f"Output saved to {out_fname}")
+            logger.info(f"Output pkl saved to {out_fname}")
 
 
 @register_action
@@ -240,15 +246,23 @@ class ShowAction(InferenceAction):
         extractor = context["extractor"]
         image_fpath = entry["file_name"]
         logger.info(f"Processing {image_fpath}")
+
+        # changing to printing file in same path
+        fileName = image_fpath[image_fpath.find('frame'):]
+
         image = cv2.cvtColor(entry["image"], cv2.COLOR_BGR2GRAY)
         image = np.tile(image[:, :, np.newaxis], [1, 1, 3])
         data = extractor(outputs)
         image_vis = visualizer.visualize(image, data)
-        entry_idx = context["entry_idx"] + 1
-        out_fname = cls._get_out_fname(entry_idx, context["out_fname"])
-        out_dir = os.path.dirname(out_fname)
-        if len(out_dir) > 0 and not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+        # entry_idx = context["entry_idx"] + 1
+        # out_fname = cls._get_out_fname(entry_idx, context["out_fname"])
+        # out_dir = os.path.dirname(out_fname)
+        # if len(out_dir) > 0 and not os.path.exists(out_dir):
+        #     os.makedirs(out_dir)
+
+        if not os.path.exists(os.path.join(root_directory , 'denseposeVisulization')):
+            os.mkdir(os.path.join(root_directory, 'denseposeVisulization'))
+        out_fname = os.path.join(root_directory, 'denseposeVisulization', fileName)
         cv2.imwrite(out_fname, image_vis)
         logger.info(f"Output saved to {out_fname}")
         context["entry_idx"] += 1
@@ -307,3 +321,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # # load the pickel
+    # pickle_in = open("FBC_frame0-1000.pkl", "rb")
+    # example_dict = pickle.load(pickle_in)
+    # print(example_dict)
+    # dense = example_dict[0]['pred_densepose']
+    # for i, result_encoded_w_shape in enumerate(dense.results):
+    #     print(i,result_encoded_w_shape )
+    #     iuv_arr = DensePoseResult.decode_png_data(*result_encoded_w_shape)
+    #     # print(iuv_arr.shape)
+    #     # iuv_arr = iuv_arr.reshape(3, -1)
+    #     # print(iuv_arr.shape)
+    #     # non_zero_id = np.asarray(np.nonzero(iuv_arr[0]))
+    #     # visulizeDenseposePredictionsOnModel(iuv_arr)
+    #     visulizeDenseposePredictionsOnModel()
